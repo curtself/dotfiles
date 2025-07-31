@@ -23,7 +23,7 @@ load_key() {
     ssh-add "$keyfile"
   fi
 }
-
+[[ -f ~/.ssh/agent.env ]] && source ~/.ssh/agent.env
 load_key ~/.ssh/id_ed25519_git
 load_key ~/.ssh/id_ed25519_git_sd
 
