@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Get a list of session and select it with fuzzy finder
+NL=$'\n'
+TML=$(tmux ls 2> /dev/null)
+TML="${TML}${NL}New-session"
+TMREPLY=$(echo "$TML" | fzf --tmux center)
+# if a selection was made, grab the first token and attach tmux to it
+if [[ -n "$TMREPLY" ]]; then
+    if [[ "$TMREPLY" = "New-session" ]]; then
+        # this means we want to create a new session
+        #echo "would run sessionizer now..."
+        #~/scripts/tmux/tmux-sessionizer
+        if [[ $# -eq 1 ]]; then
+            selected=$1
+            #echo "Selected default because of $#"
+        else
+            selected=$(find ~/games ~/projects ~/scripts ~/ -mindepth 1 -maxdepth 1 -type d | fzf --tmux center)
+        fi
+
+        if [[ -z $selected ]]; then
+            exit 0
+        fi
+
+        selected_name=$(basename "$selected" | tr . _)
+        tmux has 2> /dev/null
+        tmux_dead=$?
+        if [[ -z "$TMUX" ]] && [[ "$tmux_dead" = "1" ]]; then
+            # echo "We start new tmux session and exit!"
+            tmux new-session -s $selected_name -c $selected
+            exit 0
+        fi
+
+        if ! tmux has-session -t=$selected_name 2> /dev/null; then
+            tmux new-session -ds $selected_name -c $selected
+        fi
+
+        #tmux switch-client -t $selected_name       
+        if [[ -n "$TMUX" ]]; then
+          tmux switch-client -t $TMSESS
+        else
+          tmux attach -t $TMSESS
+        fi
+        
+    else
+        # this selects the session name from the output of tmux ls
+        # 0: X windows (created XX-date-XX) (Attached/Detached)
+        TMSESS=$(echo "$TMREPLY" | awk '{gsub(":",""); print $1}')
+        echo "trying to connect to session $TMSESS"
+        # if tmux is not running we need to start and attach the session
+        if ! tmux has-session -t=$TMSESS 2> /dev/null; then
+            #echo "tmux is not running at all so start it and create the named session"
+            tmux new-session -s $TMSESS
+            exit 0
+        fi
+        # !! tmux is clearly running or tmux ls would not give a session...
+        if [[ -z $(tmux lsc) ]]; then
+          #echo "no client running so we can't switch... attaching to selected session"
+          tmux attach -t=$TMSESS
+          exit 0
+        fi
+        # we should use switch instead of detaching 
+        #tmux switch-client -t $TMSESS
+        if [[ -n "$TMUX" ]]; then
+          tmux switch-client -t $TMSESS
+        else
+          tmux attach -t $TMSESS
+        fi
+        
+    fi
+fi

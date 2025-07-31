@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+load_key() {
+  local keyfile="$1"
+  if [[ ! -f "$keyfile" ]]; then
+    echo "Key not found: $keyfile"
+    return
+  fi
+
+  # Get the fingerprint of the private key's public part
+  local pubkey_file="${keyfile}.pub"
+  if [[ ! -f "$pubkey_file" ]]; then
+    echo "Public key not found for $keyfile"
+    return
+  fi
+
+  local fingerprint
+  fingerprint=$(ssh-keygen -lf "$pubkey_file" | awk '{print $2}')
+
+  if ssh-add -l | grep -q "$fingerprint"; then
+    echo "Already loaded: $keyfile"
+  else
+    ssh-add "$keyfile"
+  fi
+}
+
+load_key ~/.ssh/id_ed25519_git
+load_key ~/.ssh/id_ed25519_git_sd
+
+ssh-add -l
+read -p "Press enter to close this window..."
+
