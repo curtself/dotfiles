@@ -94,8 +94,11 @@ install_batcat() {
   wget "$deb_url" -O /tmp/bat_amd64.deb
   sudo dpkg -i /tmp/bat_amd64.deb
 
-  mkdir -p "$homedir/.local/bin"
-  ln -sf /usr/bin/batcat "$homedir/.local/bin/bat"
+  # if we see 'batcat' then we can soft link it as 'bat' in our local bin
+  if [[ -f /usr/bin/batcat ]]; then
+    mkdir -p "$homedir/.local/bin"
+    ln -sf /usr/bin/batcat "$homedir/.local/bin/bat"
+  fi
 }
 
 
